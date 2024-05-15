@@ -1,44 +1,157 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-   <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-    <title>AR with WebXR Example</title>
-   <script src="https://cdn.jsdelivr.net/gh/aframevr/aframe@1c2407b26c61958baa93967b5412487cd94b290b/dist/aframe-master.min.js"></script>
-<script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar-nft.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bmw Velocity</title>
+  <script src="js/info_data1.js"></script>
+  <!-- Loads <model-viewer> for modern browsers: -->
+  <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+  <!-- Loads <model-viewer> for old browsers like IE11: -->
+  <script nomodule src="https://unpkg.com/@google/model-viewer/dist/model-viewer-legacy.js"></script>
+  <link rel="stylesheet" href="css/style.css" type="text/css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
 
-<style>
-  .arjs-loader {
-    height: 100%;
-    width: 100%;
-    position: absolute;
-    top: 0;
-    left: 0;
-    background-color: rgba(0, 0, 0, 0.8);
-    z-index: 9999;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
+  <style>
+    #ar-button {
+      background-image: url('asset/image/view_ar.png');
+      background-repeat: no-repeat;
+      background-size: 20px 20px;
+      background-position: 12px 50%;
+      background-color: #fff;
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      white-space: nowrap;
+      bottom: 132px;
+      padding: 0px 16px 0px 40px;
+      font-family: Roboto Regular, Helvetica Neue, sans-serif;
+      font-size: 14px;
+      color: #4285f4;
+      height: 36px;
+      line-height: 36px;
+      border-radius: 18px;
+      border: 1px solid #DADCE0;
+    }
 
-  .arjs-loader div {
-    text-align: center;
-    font-size: 1.25em;
-    color: white;
-  }
-</style>
+    model-viewer {
+      width: 100%;
+      height: 100vh;
+    }
 
+    .back-button {
+      width: 78px;
+      height: 24px;
+    }
+
+    #model-container {
+      display: flex;
+    }
+
+    #viewer {
+      width: 100%;
+      height: 100%;
+    }
+  </style>
 </head>
 
-<body style="margin : 0px; overflow: hidden;">
-  <!-- minimal loader shown until image descriptors are loaded -->
-   <a-scene embedded arjs>
-        <a-marker preset="hiro">
-           <a-entity position="0 0.5 0" scale="0.1 0.1 0.1" gltf-model="url(animated_icon.glb)" model-handler>
-            </a-entity>
-        </a-marker>
-        <a-entity camera></a-entity>
-    </a-scene>
+<body>
+  <div class="ar-container">
+    <div id="model-container">
+      <model-viewer ar id="viewer" interpolation-decay="200" min-camera-orbit="-Infinity 22.5deg 5m"
+        src="asset/image/3d-model/m4_csl_glb_new4.glb" ios-src="asset/image/3d-model/m4_csl_gltf_new4.usdz"
+        ar-modes="webxr scene-viewer quick-look" ar-scale="auto" alt="model" loading="eager" tone-mapping="neutral"
+        camera-controls touch-action="pan-y" camera-target="0 0 0">
 
+        <input type="color" id="colorPicker" name="colorPicker">
+
+        <button slot="ar-button" id="ar-button">
+          View in your space
+        </button>
+
+        <div class="progress-bar hide" slot="progress-bar">
+          <div class="update-bar"></div>
+        </div>
+
+      </model-viewer>
+
+    </div>
+  </div>
+  <script>
+    window.onload = function () {
+      InitPanning();
+      const modelViewer = document.querySelector('#viewer');
+
+      //console.log(modelViewer);
+      for (let i = 0; i < points.length; i++) {
+        let point = points[i];
+        let pos = point["pos"];
+        let normal = point["normal"];
+        let buttText = point["butt-text"];
+        let hotspotname = point["hotspot-name"];
+        let content = point["content"];
+        let hotspot = "hotspot-" + i;
+        let id = i;
+        if ("id" in point) {
+          id = point["id"];
+        }
+        let annot = $.parseHTML('<button class="viewer-button" id="' + id + '" slot="' + hotspot + '" data-index="' + i + '" data-position="' + pos + '" data-normal="' + normal + '" data-name="' + hotspotname + '" ><span>' + hotspotname + '</span><div id="' + i + '-box" class="TextBox">' + content + '</div></button>');
+        $("#viewer").append(annot);
+        modelViewer.updateHotspot({ "name": hotspot, "position": pos, "normal": normal });
+      }
+      $(".viewer-button").click(function () {
+        let $this = $(this);
+        let hidden = true;
+        $(".viewer-button").hide();
+        $this.show();
+        if ($this.find(".TextBox").is(":visible")) {
+          hidden = false;
+        }
+        $(".TextBox").hide();
+        if (hidden) {
+          $this.find(".TextBox").show();
+          //$(".viewer-button").css("padding-top", "5px");
+          $this.addClass("back-button");
+          $this.find("span").text("Back");
+        } else {
+          $this.find(".TextBox").hide();
+          $(".viewer-button").show();
+          //$(".viewer-button").css("padding-top", "0px");
+          $this.removeClass("back-button");
+          let htname = $this.attr("data-name");
+          $this.find("span").text(htname);
+        }
+        index = $this.data("index");
+        let pos = points[index]["pos"];
+        console.log("New pivot: " + pos);
+        let model = document.querySelector('#viewer');
+        model.cameraTarget = pos;
+      });
+
+
+      //model color change
+      const modelViewerColor = document.querySelector("model-viewer#viewer");
+
+      // Get the color picker element
+      const colorPicker = document.getElementById('colorPicker');
+
+      colorPicker.addEventListener('input', (event) => {
+        const colorString = colorPicker.value;
+
+        // Find the material with the name 'M4xNME_Paint'
+        const M4xNME_Paint = modelViewerColor.model.materials.find(mat => mat.name === 'blinn2');
+        if (M4xNME_Paint) {
+          // Change the baseColorFactor value
+          M4xNME_Paint.pbrMetallicRoughness.setBaseColorFactor(colorString);
+
+        }
+      });
+
+
+    }
+
+  </script>
 </body>
+
 </html>
